@@ -1,10 +1,13 @@
 
 import java.awt.Color;
 import java.awt.Font;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -51,6 +54,7 @@ public class aplikasiBukuAlamat extends javax.swing.JFrame {
         styleButton(btnReset, gray);
 
         styleButton(btnSort, blue);
+        styleButton(btnImportCSV, green);
         styleButton(btnExportCSV, green);
         styleButton(btnHapusSemua, red);
         styleButton(btnKeluar, gray);
@@ -124,6 +128,7 @@ public class aplikasiBukuAlamat extends javax.swing.JFrame {
         listKontak = new javax.swing.JList<>();
         panelBawah = new javax.swing.JPanel();
         btnSort = new javax.swing.JButton();
+        btnImportCSV = new javax.swing.JButton();
         btnExportCSV = new javax.swing.JButton();
         btnHapusSemua = new javax.swing.JButton();
         btnKeluar = new javax.swing.JButton();
@@ -302,7 +307,15 @@ public class aplikasiBukuAlamat extends javax.swing.JFrame {
         });
         panelBawah.add(btnSort);
 
-        btnExportCSV.setText("Export ke CSV");
+        btnImportCSV.setText("Import");
+        btnImportCSV.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImportCSVActionPerformed(evt);
+            }
+        });
+        panelBawah.add(btnImportCSV);
+
+        btnExportCSV.setText("Export");
         btnExportCSV.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnExportCSVActionPerformed(evt);
@@ -520,6 +533,101 @@ public class aplikasiBukuAlamat extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnKeluarActionPerformed
 
+    private void btnImportCSVActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportCSVActionPerformed
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Pilih File CSV untuk Import");
+
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+
+                BufferedReader reader = new BufferedReader(new FileReader(file));
+                String line;
+
+                int imported = 0;  // jumlah berhasil ditambah
+                int skipped = 0;   // jumlah gagal/dilewati
+                int lineNumber = 0;
+
+                HashSet<String> existingData = new HashSet<>();
+                for (int i = 0; i < model.size(); i++) {
+                    existingData.add(model.get(i));
+                }
+
+                // ====== Lewati header CSV ======
+                line = reader.readLine();
+                lineNumber++;
+
+                if (line == null) {
+                    JOptionPane.showMessageDialog(this, "File CSV kosong!");
+                    reader.close();
+                    return;
+                }
+
+                // ====== Baca baris demi baris ======
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
+
+                    // Lewati baris kosong
+                    if (line.trim().isEmpty()) {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Memastikan format aman
+                    String[] data = line.split(",");
+
+                    if (data.length < 3) {
+                        // Format salah → skip
+                        skipped++;
+                        continue;
+                    }
+
+                    // Bersihkan data dari tanda kutip dan spasi
+                    String nama = data[0].replace("\"", "").trim();
+                    String alamat = data[1].replace("\"", "").trim();
+                    String telepon = data[2].replace("\"", "").trim();
+
+                    // Validasi telepon
+                    if (!isValidPhone(telepon)) {
+                        skipped++;
+                        continue;
+                    }
+
+                    String gabung = nama + " | " + alamat + " | " + telepon;
+
+                    // ====== CEK DUPLIKASI ======
+                    if (existingData.contains(gabung)) {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Tambah ke model
+                    model.addElement(gabung);
+                    existingData.add(gabung);
+                    imported++;
+                }
+
+                reader.close();
+
+                // ====== RINGKASAN IMPORT ======
+                JOptionPane.showMessageDialog(this,
+                        "Import selesai!\n\n" +
+                        "Berhasil ditambahkan : " + imported + " kontak\n" +
+                        "Data dilewati        : " + skipped + " baris\n" +
+                        "Total setelah import : " + model.size() + " kontak",
+                        "Hasil Import CSV",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                    "Gagal Import: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_btnImportCSVActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -561,6 +669,7 @@ public class aplikasiBukuAlamat extends javax.swing.JFrame {
     private javax.swing.JButton btnExportCSV;
     private javax.swing.JButton btnHapus;
     private javax.swing.JButton btnHapusSemua;
+    private javax.swing.JButton btnImportCSV;
     private javax.swing.JButton btnKeluar;
     private javax.swing.JButton btnReset;
     private javax.swing.JButton btnSort;
